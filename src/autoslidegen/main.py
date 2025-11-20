@@ -59,7 +59,11 @@ class AutoSlideGen:
         bullets_per_slide: int = 4,
         additional_requirements: Optional[str] = None,
         output_path: Optional[str] = None,
-        save_json: bool = True
+        save_json: bool = True,
+        generate_speaker_notes: bool = False,
+        add_images: bool = False,
+        image_provider: str = "unsplash",
+        add_charts: bool = False
     ) -> dict:
         """
         Generate presentation from topic and build PPTX.
@@ -74,6 +78,10 @@ class AutoSlideGen:
             additional_requirements: Additional requirements
             output_path: Custom output path for PPTX
             save_json: Whether to save JSON outline
+            generate_speaker_notes: Whether to generate speaker notes
+            add_images: Whether to search and add images
+            image_provider: Image provider (unsplash, pexels)
+            add_charts: Whether to auto-generate charts
 
         Returns:
             Dictionary with paths to generated files
@@ -98,6 +106,26 @@ class AutoSlideGen:
             f"Outline generated successfully with {len(outline.slides)} slides"
         )
 
+        # Generate speaker notes if requested
+        if generate_speaker_notes:
+            self.logger.info("Generating speaker notes...")
+            outline = self.generate_speaker_notes_for_outline(outline)
+
+        # Search and prepare images if requested
+        image_map = {}
+        if add_images:
+            self.logger.info("Searching for images...")
+            image_map = self.search_images_for_outline(outline, image_provider)
+
+        # Generate charts if requested
+        chart_map = {}
+        if add_charts:
+            self.logger.info("Generating charts...")
+            chart_map = self.generate_charts_for_outline(outline)
+
+        # Merge image and chart maps
+        all_images = {**image_map, **chart_map}
+
         # Save JSON if requested
         json_path = None
         if save_json:
@@ -105,7 +133,7 @@ class AutoSlideGen:
 
         # Build PPTX
         self.logger.info("Building PPTX file...")
-        pptx_path = self.builder.build(outline, output_path)
+        pptx_path = self.builder.build(outline, output_path, image_map=all_images)
         self.logger.info(f"PPTX file created: {pptx_path}")
 
         return {
@@ -157,3 +185,94 @@ class AutoSlideGen:
 
         self.logger.info(f"Outline saved to JSON: {json_path}")
         return str(json_path)
+
+    def generate_speaker_notes_for_outline(
+        self,
+        outline: PresentationOutline
+    ) -> PresentationOutline:
+        """
+        Generate speaker notes for an existing outline.
+
+        Args:
+            outline: Presentation outline
+
+        Returns:
+            Updated outline with speaker notes
+        """
+        from .extensions.speaker_notes import SpeakerNotesGenerator
+
+        notes_generator = SpeakerNotesGenerator(self.generator)
+        return notes_generator.generate_notes_for_outline_sync(outline)
+
+    def search_images_for_outline(
+        self,
+        outline: PresentationOutline,
+        provider: str = "unsplash"
+    ) -> dict:
+        """
+        Search and download images for outline slides.
+
+        Args:
+            outline: Presentation outline
+            provider: Image provider
+
+        Returns:
+            Dictionary mapping slide numbers to image paths
+        """
+        from .extensions.image_search import ImageSearcher, ImageInserter
+        import os
+
+        # Get API key from environment
+        api_key_env = f"{provider.upper()}_API_KEY"
+        api_key = os.getenv(api_key_env)
+
+        if not api_key:
+            self.logger.warning(
+                f"No API key found for {provider}. Set {api_key_env} environment variable."
+            )
+            return {}
+
+        try:
+            searcher = ImageSearcher(api_key=api_key, provider=provider)
+            inserter = ImageInserter(searcher=searcher)
+
+            image_map = inserter.add_images_to_outline(outline)
+            self.logger.info(f"Found {len(image_map)} images for slides")
+
+            return image_map
+
+        except ImportError as e:
+            self.logger.error(f"Image search requires additional packages: {e}")
+            return {}
+        except Exception as e:
+            self.logger.error(f"Failed to search images: {e}")
+            return {}
+
+    def generate_charts_for_outline(
+        self,
+        outline: PresentationOutline
+    ) -> dict:
+        """
+        Generate charts for outline slides.
+
+        Args:
+            outline: Presentation outline
+
+        Returns:
+            Dictionary mapping slide numbers to chart image paths
+        """
+        from .extensions.chart_generator import SmartChartGenerator
+
+        try:
+            chart_gen = SmartChartGenerator(chart_library="matplotlib")
+            chart_map = chart_gen.generate_charts_for_outline(outline)
+
+            self.logger.info(f"Generated {len(chart_map)} charts for slides")
+            return chart_map
+
+        except ImportError as e:
+            self.logger.error(f"Chart generation requires additional packages: {e}")
+            return {}
+        except Exception as e:
+            self.logger.error(f"Failed to generate charts: {e}")
+            return {}

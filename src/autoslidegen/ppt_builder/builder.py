@@ -34,6 +34,7 @@ class PPTBuilder:
         # Extract font configurations
         self.fonts = self.config.get('fonts', {})
         self.layout_config = self.config.get('layout', {})
+        self.image_map = {}  # Maps slide numbers to image paths
 
     def _hex_to_rgb(self, hex_color: str) -> RGBColor:
         """
@@ -129,8 +130,21 @@ class PPTBuilder:
             prs: Presentation object
             slide_data: Slide data
         """
-        # Use title and content layout (typically layout 1)
-        slide_layout = prs.slide_layouts[1]
+        # Check if we have an image for this slide
+        has_image = slide_data.slide_number in self.image_map
+
+        # Use appropriate layout
+        if has_image:
+            # Layout 8 is typically "Two Content" or picture layout
+            try:
+                slide_layout = prs.slide_layouts[8]
+            except IndexError:
+                # Fallback to standard layout
+                slide_layout = prs.slide_layouts[1]
+                has_image = False
+        else:
+            slide_layout = prs.slide_layouts[1]
+
         slide = prs.slides.add_slide(slide_layout)
 
         # Set title
@@ -166,6 +180,11 @@ class PPTBuilder:
                 font.color.rgb = self._hex_to_rgb(
                     bullet_font.get('color', '333333')
                 )
+
+        # Add image if available
+        if has_image:
+            image_path = self.image_map[slide_data.slide_number]
+            self._add_image_to_slide(slide, image_path)
 
         # Add speaker notes if present
         if slide_data.notes:
@@ -206,10 +225,38 @@ class PPTBuilder:
 
         self.logger.debug(f"Created section slide: {slide_data.title}")
 
+    def _add_image_to_slide(self, slide, image_path: str):
+        """
+        Add image to slide.
+
+        Args:
+            slide: Slide object
+            image_path: Path to image file
+        """
+        try:
+            # Position image on right side of slide
+            left = Inches(6.5)
+            top = Inches(2.0)
+            width = Inches(3.0)
+
+            # Add picture
+            pic = slide.shapes.add_picture(
+                image_path,
+                left,
+                top,
+                width=width
+            )
+
+            self.logger.debug(f"Added image to slide: {image_path}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to add image {image_path}: {e}")
+
     def build(
         self,
         outline: PresentationOutline,
-        output_path: Optional[str] = None
+        output_path: Optional[str] = None,
+        image_map: Optional[Dict[int, str]] = None
     ) -> str:
         """
         Build PPTX file from outline.
@@ -217,10 +264,14 @@ class PPTBuilder:
         Args:
             outline: Validated presentation outline
             output_path: Output file path. If None, auto-generates.
+            image_map: Optional dict mapping slide numbers to image paths
 
         Returns:
             Path to created PPTX file
         """
+        # Store image map
+        if image_map:
+            self.image_map = image_map
         self.logger.info(f"Building presentation: {outline.metadata.topic}")
 
         # Create presentation

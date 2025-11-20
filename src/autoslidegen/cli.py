@@ -90,6 +90,27 @@ def cli(ctx, config, debug):
     is_flag=True,
     help='Do not save JSON outline'
 )
+@click.option(
+    '--speaker-notes',
+    is_flag=True,
+    help='Generate speaker notes for each slide'
+)
+@click.option(
+    '--add-images',
+    is_flag=True,
+    help='Search and add images to slides'
+)
+@click.option(
+    '--image-provider',
+    type=click.Choice(['unsplash', 'pexels']),
+    default='unsplash',
+    help='Image search provider'
+)
+@click.option(
+    '--add-charts',
+    is_flag=True,
+    help='Auto-generate charts for applicable slides'
+)
 @click.pass_context
 def generate(
     ctx,
@@ -102,7 +123,11 @@ def generate(
     provider,
     output,
     requirements,
-    no_json
+    no_json,
+    speaker_notes,
+    add_images,
+    image_provider,
+    add_charts
 ):
     """Generate a presentation from topic and requirements."""
 
@@ -151,7 +176,11 @@ def generate(
                 bullets_per_slide=bullets,
                 additional_requirements=requirements,
                 output_path=output,
-                save_json=not no_json
+                save_json=not no_json,
+                generate_speaker_notes=speaker_notes,
+                add_images=add_images,
+                image_provider=image_provider,
+                add_charts=add_charts
             )
 
             progress.update(task, description="Complete!", completed=True)
