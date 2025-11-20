@@ -50,7 +50,10 @@ logs/
 # Output files
 output/
 *.pptx
+
+# Ignore JSON files except in examples/
 *.json
+!examples/*.json
 
 # Temporary files
 tmp/
