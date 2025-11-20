@@ -1,0 +1,98 @@
+# AutoSlideGen Configuration
+
+# LLM Provider Settings
+llm:
+  # Provider: openai, anthropic, or local
+  provider: "openai"
+
+  # Model configurations
+  models:
+    openai:
+      model_name: "gpt-4-turbo-preview"
+      api_key_env: "OPENAI_API_KEY"
+      temperature: 0.7
+      max_tokens: 4096
+
+    anthropic:
+      model_name: "claude-3-5-sonnet-20241022"
+      api_key_env: "ANTHROPIC_API_KEY"
+      temperature: 0.7
+      max_tokens: 4096
+
+    local:
+      base_url: "http://localhost:11434"
+      model_name: "llama2"
+      temperature: 0.7
+      max_tokens: 4096
+
+# Outline Generation Settings
+outline:
+  # Default constraints
+  min_slides: 5
+  max_slides: 30
+  default_slides: 10
+
+  min_bullets_per_slide: 2
+  max_bullets_per_slide: 6
+  default_bullets: 4
+
+  # Language support
+  supported_languages:
+    - "zh"  # Chinese
+    - "en"  # English
+    - "ja"  # Japanese
+    - "es"  # Spanish
+
+  default_language: "zh"
+
+# PPT Generation Settings
+ppt:
+  # Template settings
+  template:
+    slide_width: 10  # inches
+    slide_height: 7.5  # inches
+
+  # Font settings
+  fonts:
+    title:
+      name: "Arial"
+      size: 44
+      bold: true
+      color: "1F4E78"  # Dark blue
+
+    subtitle:
+      name: "Arial"
+      size: 28
+      bold: false
+      color: "2E5C8A"
+
+    body:
+      name: "Arial"
+      size: 18
+      bold: false
+      color: "000000"
+
+    bullet:
+      name: "Arial"
+      size: 16
+      bold: false
+      color: "333333"
+
+  # Layout settings
+  layout:
+    title_top_margin: 0.5
+    title_left_margin: 0.5
+    content_top_margin: 2.0
+    content_left_margin: 1.0
+    bullet_indent: 0.5
+
+# Output Settings
+output:
+  default_dir: "./output"
+  filename_template: "{topic}_{timestamp}.pptx"
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "./logs/autoslidegen.log"
