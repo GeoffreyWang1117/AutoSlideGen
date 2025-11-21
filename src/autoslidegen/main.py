@@ -11,6 +11,7 @@ from .parser.models import GenerationRequest, PresentationOutline
 from .outline_generator.factory import GeneratorFactory
 from .ppt_builder.builder import PPTBuilder
 from .utils.config import get_config
+from .utils.cache import get_cache_manager
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,9 @@ class AutoSlideGen:
     def __init__(
         self,
         provider: Optional[str] = None,
-        config_path: Optional[str] = None
+        config_path: Optional[str] = None,
+        use_cache: bool = True,
+        cache_ttl: int = 3600
     ):
         """
         Initialize AutoSlideGen.
@@ -29,6 +32,8 @@ class AutoSlideGen:
         Args:
             provider: LLM provider (openai, anthropic). Uses config default if None.
             config_path: Path to config file. Uses default if None.
+            use_cache: Whether to enable caching for outline generation.
+            cache_ttl: Cache TTL in seconds (default: 3600 = 1 hour).
         """
         self.config = get_config(config_path)
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -46,6 +51,15 @@ class AutoSlideGen:
         # Initialize PPT builder
         ppt_config = self.config.get_ppt_config()
         self.builder = PPTBuilder(ppt_config)
+
+        # Initialize cache
+        self.use_cache = use_cache
+        if self.use_cache:
+            self.cache = get_cache_manager(ttl_seconds=cache_ttl)
+            self.logger.info("Cache enabled")
+        else:
+            self.cache = None
+            self.logger.info("Cache disabled")
 
         self.logger.info(f"Initialized AutoSlideGen with provider: {provider}")
 
@@ -99,12 +113,28 @@ class AutoSlideGen:
             additional_requirements=additional_requirements
         )
 
-        # Generate outline
-        self.logger.info("Generating outline from LLM...")
-        outline = self.generator.generate_outline_sync(request)
-        self.logger.info(
-            f"Outline generated successfully with {len(outline.slides)} slides"
-        )
+        # Try to get cached outline
+        outline = None
+        request_params = request.model_dump()
+
+        if self.use_cache and self.cache:
+            cached_data = self.cache.get_outline(request_params)
+            if cached_data:
+                self.logger.info("Using cached outline")
+                outline = PresentationOutline.model_validate(cached_data)
+
+        # Generate outline if not cached
+        if outline is None:
+            self.logger.info("Generating outline from LLM...")
+            outline = self.generator.generate_outline_sync(request)
+            self.logger.info(
+                f"Outline generated successfully with {len(outline.slides)} slides"
+            )
+
+            # Cache the generated outline
+            if self.use_cache and self.cache:
+                self.cache.set_outline(request_params, outline.model_dump())
+                self.logger.info("Outline cached for future use")
 
         # Generate speaker notes if requested
         if generate_speaker_notes:
