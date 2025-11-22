@@ -1,0 +1,40 @@
+{
+  "requests": [
+    {
+      "topic": "深度学习技术",
+      "audience": "AI研究人员",
+      "purpose": "技术分享",
+      "language": "zh",
+      "num_slides": 12,
+      "bullets_per_slide": 4,
+      "additional_requirements": "重点介绍CNN和Transformer架构"
+    },
+    {
+      "topic": "DevOps Best Practices",
+      "audience": "Development Teams",
+      "purpose": "Process Improvement",
+      "language": "en",
+      "num_slides": 10,
+      "bullets_per_slide": 3,
+      "additional_requirements": "Focus on CI/CD pipelines and automation"
+    },
+    {
+      "topic": "数据可视化技巧",
+      "audience": "数据分析师",
+      "purpose": "技能培训",
+      "language": "zh",
+      "num_slides": 8,
+      "bullets_per_slide": 4,
+      "additional_requirements": "包含实用工具和案例"
+    },
+    {
+      "topic": "Agile Project Management",
+      "audience": "Project Managers",
+      "purpose": "Methodology Training",
+      "language": "en",
+      "num_slides": 15,
+      "bullets_per_slide": 4,
+      "additional_requirements": "Include Scrum and Kanban frameworks"
+    }
+  ]
+}
