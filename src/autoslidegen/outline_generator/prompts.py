@@ -8,17 +8,17 @@ You must generate a JSON object that follows this exact structure:
 
 {
   "metadata": {
-    "topic": "string (presentation title)",
+    "topic": "string (presentation title, MUST match the user's topic)",
     "audience": "string (target audience)",
     "purpose": "string (presentation purpose)",
-    "language": "string (zh/en/ja/es)",
+    "language": "string (zh/en/ja/es - MUST match user's language)",
     "estimated_duration": "integer (optional, in minutes)"
   },
   "slides": [
     {
       "slide_number": 1,
       "title": "string",
-      "slide_type": "title",
+      "slide_type": "title | content | section",
       "bullet_points": [
         {
           "text": "string",
@@ -30,15 +30,21 @@ You must generate a JSON object that follows this exact structure:
   ]
 }
 
+CRITICAL slide_type rules:
+- "title": ONLY for the first slide (cover page), can have 1-3 bullet points
+- "content": For ALL regular content slides with detailed information, MUST have 2-8 bullet points
+- "section": ONLY for chapter dividers/transition slides, can have 1-3 bullet points maximum
+
 Key requirements:
 1. First slide MUST be type "title" (cover slide)
-2. Content slides must have 2-8 bullet points
-3. Use slide_type: "section" for chapter dividers
+2. Most slides should be type "content" with 2-8 bullet points each
+3. Use "section" type SPARINGLY - only for major chapter transitions (max 2-3 per presentation)
 4. Bullet points can have levels 1-3 for hierarchy
 5. Ensure logical flow and clear structure
 6. Make content presentation-ready, not just notes
 7. Each bullet should be concise but complete
-8. Output ONLY valid JSON, no other text"""
+8. ALL content (titles, bullets, metadata) MUST be in the user-specified language
+9. Output ONLY valid JSON, no other text"""
 
 
 def get_user_prompt(

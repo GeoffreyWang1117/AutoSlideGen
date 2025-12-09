@@ -32,6 +32,34 @@ class BulletPoint(BaseModel):
         return v.strip()
 
 
+class ChartSpec(BaseModel):
+    """Specification for a chart to be embedded in a slide."""
+
+    chart_type: Literal["bar", "horizontal_bar", "stacked_bar", "pie", "donut", "line", "area", "radar", "scatter"] = Field(
+        default="bar",
+        description="Type of chart to generate"
+    )
+    title: str = Field(
+        default="",
+        max_length=100,
+        description="Chart title"
+    )
+    data: dict = Field(
+        default_factory=dict,
+        description="Chart data in appropriate format for the chart type"
+    )
+    xlabel: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="X-axis label"
+    )
+    ylabel: Optional[str] = Field(
+        default=None,
+        max_length=50,
+        description="Y-axis label"
+    )
+
+
 class Slide(BaseModel):
     """A single slide in the presentation."""
 
@@ -58,6 +86,10 @@ class Slide(BaseModel):
         default=None,
         max_length=1000,
         description="Speaker notes for this slide (optional)"
+    )
+    chart: Optional[ChartSpec] = Field(
+        default=None,
+        description="Optional chart specification to embed in this slide"
     )
 
     @field_validator('title')
